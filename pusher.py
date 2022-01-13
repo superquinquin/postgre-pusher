@@ -32,6 +32,7 @@ class pusher:
       self.cursor = self.conn.cursor()
       
       self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- conection done\n')
+
     except Exception as e:
       self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- conection error\n')
       self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')
@@ -39,8 +40,12 @@ class pusher:
 
 
   def close(self):
-    self.log.close()
-    self.conn.close()
+    try:
+      self.log.close()
+      self.conn.close()
+
+    except Exception:
+      pass
 
 
 
