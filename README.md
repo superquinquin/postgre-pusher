@@ -24,12 +24,12 @@ folder
 │   │   pusher.py
 │   │   keys.py
 │          
-└───tables
+└───tables folder
 │   │   table.csv
 │   │   tables.xlsx
 │   │   ...
 │   │
-│   └───subfolder tables
+│   └───tables subfolder
 │   │   table.csv
 │   │   tables.xlsx
 │   │   ...
