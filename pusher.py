@@ -45,9 +45,15 @@ class pusher:
 
 
   def table_set(self):
-    table_query = "SELECT * FROM information_schema.tables;"
-    self.cursor.execute(table_query)
-    self.table_list = list(self.cursor.fetchall())
+    try:
+      table_query = "SELECT * FROM information_schema.tables;"
+      self.cursor.execute(table_query)
+      self.table_list = list(self.cursor.fetchall())
+
+    except Exception as e:
+      self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- fetch error\n')
+      self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')
+
 
 
 
@@ -69,7 +75,7 @@ class pusher:
       matched = list(filter(None,[re.findall(match_bool, x.lower())  for x in uniq if type(x) == str]))
       
       if (len(uniq) == 2 and len(matched) == 2) or (len(uniq) == 1 and len(matched) == 1):
-        corrected = [True if x.lower() == 'vrai' else False for x in content]
+        corrected = [True if x.lower() in ['vrai','true'] else False for x in content]
         df[col] = corrected    
 
     return df
