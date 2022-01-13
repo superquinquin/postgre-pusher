@@ -30,9 +30,9 @@ folder
 │   │   ...
 │   │
 │   └───tables subfolder
-│   │   table.csv
-│   │   tables.xlsx
-│   │   ...
+│      │   table.csv
+│      │   tables.xlsx
+│      │   ...
 │
 │   log.txt
 ```
