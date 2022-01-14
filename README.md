@@ -12,27 +12,6 @@ Method to push tables into postgre databases.
 * pandas 
 * psycopg2
 
-**Folder arrangement:**
-<br>your script file must be in a subfolder, at 1 distance from the folder root.
-<br>Beside that, you can freely arrange the folder.
-<br>The following diagram is an example of folder arrangement.
-
-```
-folder   
-│
-└───scripts folder
-│   │   pusher.py
-│   │   keys.py
-│          
-└───tables folder
-│   │   table.csv
-│   │   tables.xlsx
-│   │   ...
-│   │
-│   └───tables subfolder
-│       │   table.csv
-│       │   tables.xlsx
-│       │   ...
-│
-│   log.txt
-```
+**Inputs:**
+* **Root folder path** as init path variable
+* **postgre connection informations**
