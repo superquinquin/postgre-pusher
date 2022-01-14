@@ -12,8 +12,9 @@ from keys import key
 
 
 class pusher:
-  def __init__(self):
-    self.path = '/'.join(os.path.dirname(__file__).split('/')[:-1])
+  def __init__(self, path):
+    # self.path = '/'.join(os.path.dirname(__file__).split('/')[:-1])
+    self.path = path
     self.log = open(self.path+'/log.txt','a', encoding='utf-8', errors='ignore')
     self.table_list = []
 
@@ -181,12 +182,6 @@ class pusher:
 
 
 
-  def traceback_on_payload(self, e, file):
-    self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- payload error -- {file}\n')
-    self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')       
-
-
-
   def query_create_table(self,name, sql_cols_type):
     create_query = f"CREATE TABLE IF NOT EXISTS {name} ({sql_cols_type})"
     self.cursor.execute(create_query)
@@ -233,7 +228,8 @@ class pusher:
             self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {file} -- pushed sucessfully\n')
 
           except Exception as e:
-            self.traceback_on_payload(e, file)
+            self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- payload error -- {file}\n')
+            self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')   
 
         elif extension == 'xlsx':
           try:
@@ -252,7 +248,8 @@ class pusher:
             self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {file} -- pushed sucessfully\n')
 
           except Exception as e:
-            self.traceback_on_payload(e, file)  
+            self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- payload error -- {file}\n')
+            self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')   
   
 
   
@@ -271,9 +268,9 @@ class pusher:
 
 
 if __name__ == '__main__':
-  odoo_pusher = pusher().run(key['database'], 
-                             key['username'],
-                             key['password'],
-                             key['host'],
-                             key['port'])
+  odoo_pusher = pusher(key['path']).run(key['database'], 
+                                        key['username'],
+                                        key['password'],
+                                        key['host'],
+                                        key['port'])
 
