@@ -13,12 +13,17 @@ from keys import key
 
 class pusher:
   def __init__(self, path):
-    # self.path = '/'.join(os.path.dirname(__file__).split('/')[:-1])
-    self.path = path
-    self.log = open(self.path+'/log.txt','a', encoding='utf-8', errors='ignore')
-    self.table_list = []
+    try:
+      # self.path = '/'.join(os.path.dirname(__file__).split('/')[:-1])
+      self.path = path
+      self.log = open(os.path.dirname(__file__)+'/log.txt','a', encoding='utf-8', errors='ignore')
+      self.table_list = []
 
-    self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- init pusher\n')
+      self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- init pusher\n')
+
+    except Exception as e:
+      self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- init error\n')
+      self.log.write(f'--{datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")}-- {e}\n {traceback.extract_tb(sys.exc_info()[2])}\n')
 
 
 
@@ -192,6 +197,13 @@ class pusher:
     self.cursor.execute(delete_query)
     self.conn.commit()
 
+
+  def query_drop_table(self, name):
+    drop_query = f"DROP TABLE {name}"
+    self.cursor.execute(drop_query)
+    self.conn.commit()
+
+
   def query_push_content(self, name, sql_cols, sql_val_format, content):
     push_query = f"INSERT INTO {name} ({sql_cols})  VALUES ({sql_val_format})"
     self.cursor.executemany(push_query, content)
@@ -218,7 +230,8 @@ class pusher:
             in_place = self.search_table(name)
 
             if in_place == True:
-              self.query_delete_content(name)
+              self.query_drop_table(name)
+              self.query_create_table(name, sql_cols_type)
               self.query_push_content(name, sql_cols, sql_val_format, content)
 
             else:
@@ -238,7 +251,8 @@ class pusher:
             in_place = self.search_table(name)
 
             if in_place == True:
-              self.query_delete_content(name)
+              self.query_drop_table(name)
+              self.query_create_table(name, sql_cols_type)
               self.query_push_content(name, sql_cols, sql_val_format, content)
 
             else:
