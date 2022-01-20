@@ -8,18 +8,144 @@ import traceback
 import unicodedata
 
 import psycopg2
+import dropbox
 
 from keys import key
 
 
+
+
+
+
+
+class puller:
+
+  def __init__(self, target_path, dbx_path, token):
+    try:
+      self.target_path = target_path
+      self.dbx_root = dbx_path
+
+      self.dbx_token = token
+
+      self.date = datetime.datetime.now()
+
+      self.dbx_files_map = []
+      self.dbx_removed = []
+      self.target_files_map = []
+      self.table_to_drop = []
+
+      self.log = open(os.path.dirname(__file__)+'/log.txt','a', encoding='utf-8', errors='ignore')
+      self.log.write('--------------------------\n')
+      self.write_log('init puller', False,'', '')
+
+    except Exception as e:
+      self.write_log('init error', True, e, '')
+  
+
+
+  def dbx_connection(self):
+    try:
+      dbx = dropbox.Dropbox(self.dbx_token)
+
+      self.write_log('dropbox connection done', False,'', '')
+
+    except Exception as e:
+      self.write_log('dropbox connection error', True, e, '')
+    
+    return dbx
+  
+
+
+  def write_log(self, msg, trace_back, e, add):
+    self.log.write('--'+datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")+'-- '+msg+' -- '+add+'\n')
+
+    if trace_back == True:
+      self.log.write('--'+datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")+'-- '+str(e)+'\n'+str(traceback.extract_tb(sys.exc_info()[2]))+'\n')
+
+
+  def map_target_folder(self):
+    """map the csv and xlsx files in the target folder/subfolders
+    reurn list of tuple (name,path)"""
+    for (dirpath, dirnames, filenames) in os.walk(self.target_path):
+      self.target_files_map += [(file, os.path.join(dirpath, file)) for file in filenames if file.split('.')[-1] in ['csv', 'xlsx']]
+
+
+
+  def fetch_table(self, dbx, dbx_path):
+    """ dump recently modified csv and xlsx documents and map files in dropbox as list of tuple (name,path)"""
+
+    for file in dbx.files_list_folder(dbx_path).entries:
+      name = file.name
+      path = file.path_lower
+
+      try:
+        last_mod = file.server_modified
+        delta = int((self.date - last_mod).total_seconds())
+
+      except AttributeError as e:
+        last_mod = None
+
+
+      if len(name.split('.')) == 1: #recursion
+        sub_dbx_path = path
+        self.fetch_table(dbx, sub_dbx_path)
+      
+      else:
+        extension = name.split('.')[-1]
+
+        if extension in ['csv', 'xlsx']:
+          try:
+            self.dbx_files_map.append((name, path))
+
+            if delta < 86400:
+              dbx.files_download_to_file(self.target_path+'/'+name, path)
+
+              self.write_log(name, False, '', 'dump sucessfully')
+
+          except Exception as e:
+            self.write_log(name, True, e, 'dump error')
+  
+
+
+  def remove_from_target_folder(self):
+    in_dbx = [x[0] for x in self.dbx_files_map]
+    for file in self.target_files_map:
+      if file and file[0] not in in_dbx:
+        try:
+          self.table_to_drop.append(file)
+          os.remove(file[1])
+
+          self.write_log('removing tables from the folder', False,'', str(self.table_to_drop))
+
+        except Exception as e:
+          self.write_log('removing table error', True, e, '')
+
+
+  def run(self, path):
+    self.map_target_folder()
+    dbx = self.dbx_connection()
+    self.fetch_table(dbx, path)
+    self.remove_from_target_folder()
+
+
+
+
+
+
+
+
+
 class pusher:
-  def __init__(self, path):
+  def __init__(self, target_path, table_to_drop, enable_drop):
     try:
       # self.path = '/'.join(os.path.dirname(__file__).split('/')[:-1])
-      self.path = path
+      self.path = target_path
+      self.table_to_drop = table_to_drop
+      self.enable_drop_table = enable_drop
       self.log = open(os.path.dirname(__file__)+'/log.txt','a', encoding='utf-8', errors='ignore')
       self.table_list = []
 
+      self.log.write('--------------------------\n')
       self.write_log('init pusher', False,'', '')
 
     except Exception as e:
@@ -259,7 +385,7 @@ class pusher:
     for file in architecture:
 
       if len(file.split('.')) == 1: 
-        sub_path = self.path+'/'+file
+        sub_path = path+'/'+file
         self.launch_payload(sub_path)
 
       else:
@@ -306,8 +432,19 @@ class pusher:
           except Exception as e:
             self.write_log('payload error', True, e, '') 
   
+  def drop_removed_tables(self):
+    for table in self.table_to_drop:
+      try:
+        name = table[0].split('.')[0]
+        name = self.name_cleaner(name)
+        self.query_drop_table(name)
 
-  
+        self.write_log(name, False, '', 'droped sucessfully')
+
+      except Exception as e:
+        self.write_log('droping removed table error', True, e, '')
+      
+
   def run(self, database, username, password, host, port):
     self.connect(database, 
                  username,
@@ -316,12 +453,26 @@ class pusher:
                  port)
     self.table_set()
     self.launch_payload(self.path)
+
+    if self.enable_drop_table == True:
+      self.drop_removed_tables()
+
     self.close()
 
 
+
+
+
 if __name__ == '__main__':
-  odoo_pusher = pusher(key['path']).run(key['database'], 
-                                        key['username'],
-                                        key['password'],
-                                        key['host'],
-                                        key['port'])
+
+  pull = puller(key['path'],
+                key['dbx_path'],
+                key['token'])
+
+  pull.run(key['dbx_path'])
+
+  odoo_pusher = pusher(key['path'], pull.table_to_drop, True).run(key['database'], 
+                                                                  key['username'],
+                                                                  key['password'],
+                                                                  key['host'],
+                                                                  key['port'])
