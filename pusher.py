@@ -180,32 +180,32 @@ class drive_puller(puller):
         last_mod = datetime.datetime.strptime(' '.join(file.get('modifiedTime').split('T'))[:-5], '%Y-%m-%d %H:%M:%S')
         delta = int((self.date - last_mod).total_seconds())
 
-        if delta < 86400:
+        # if delta < 86400:
           
-          if mimetype == 'application/vnd.google-apps.spreadsheet':
-            request = self.service.files().export_media(fileId=id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            fh = FileIO(self.target_path+ '/' + name + '.xlsx', mode='wb')
-            downloader = apiclient.http.MediaIoBaseDownload(fh, request)
+        if mimetype == 'application/vnd.google-apps.spreadsheet':
+          request = self.service.files().export_media(fileId=id, mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          fh = FileIO(self.target_path+ '/' + name + '.xlsx', mode='wb')
+          downloader = apiclient.http.MediaIoBaseDownload(fh, request)
 
-            done = False
-            while done is False:
-              status, done = downloader.next_chunk()
+          done = False
+          while done is False:
+            status, done = downloader.next_chunk()
 
-          else:
-            request = self.service.files().get_media(fileId=id)
-            fh = BytesIO()
-            downloader = apiclient.http.MediaIoBaseDownload(fh, request)
+        else:
+          request = self.service.files().get_media(fileId=id)
+          fh = BytesIO()
+          downloader = apiclient.http.MediaIoBaseDownload(fh, request)
 
-            done = False
-            while done is False:
-              status, done = downloader.next_chunk()
-              
-            fh.seek(0)
-            with open(self.target_path+'/'+name, 'wb') as f:
-                shutil.copyfileobj(fh, f, length=131072)
-          
+          done = False
+          while done is False:
+            status, done = downloader.next_chunk()
+            
+          fh.seek(0)
+          with open(self.target_path+'/'+name, 'wb') as f:
+              shutil.copyfileobj(fh, f, length=131072)
+        
 
-          self.write_log(name, False, '', 'dumped from drive sucessfully')
+        self.write_log(name, False, '', 'dumped from drive sucessfully')
       
       except Exception as e:
         self.write_log(name, True, e, 'drive dump error')
