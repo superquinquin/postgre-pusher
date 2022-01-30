@@ -14,8 +14,9 @@ from config import config
 import psycopg2
 if config['enable_dbx_pull'] == True:
   import dropbox
+  
 if config['enable_drive_pull'] == True:
-  from oauth2client.service_account import ServiceAccountCredentials
+  from google.oauth2 import service_account
   import apiclient
 
 
@@ -109,7 +110,8 @@ class puller:
       dbx_pull.fetch_table(dbx, dbx_pull.dbx_folder_path)
       self.get_from_dbx_children(dbx_pull.dbx_files)
     
-    self.remove_from_target_folder()
+    if self.enable_drive == True or self.enable_dbx == True:
+      self.remove_from_target_folder()
 
 
 
@@ -119,8 +121,7 @@ class drive_puller(puller):
 
   def drive_connection(self, secret_json, scopes, api, version):
     try:
-      credentials = ServiceAccountCredentials.from_json_keyfile_name(secret_json, 
-                                                                    scopes=scopes)
+      credentials = service_account.Credentials.from_service_account_file(secret_json).with_scopes(scopes)
       self.service = apiclient.discovery.build(api, 
                                               version, 
                                               credentials=credentials)
