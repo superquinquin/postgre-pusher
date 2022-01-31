@@ -48,5 +48,4 @@ Method to push tables from **Google Drive** and **Dropbox** into **postgre datab
 * psycopg2
 * openpyxl
 * dropbox ( if pull drom dropbox is enabled )
-* oauth2client and google-api-python-client ( if pull from drive is enabled )
-<br> (oauth2client is noted as depracated, and could possibly be replaced by **google-auth** in the future)
+* google-auth and google-api-python-client ( if pull from drive is enabled )
